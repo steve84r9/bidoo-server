@@ -34,7 +34,10 @@ async function initDB() {
 async function scrapeAuction(id) {
   const url = `https://it.bidoo.com/auction.php?a=${id}`;
 
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({
+  headless: true,
+  executablePath: "/usr/bin/chromium-browser"
+});
   const page = await browser.newPage();
 
   await page.goto(url, { waitUntil: "networkidle" });
