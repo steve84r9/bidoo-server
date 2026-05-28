@@ -63,17 +63,11 @@ async function scrapeAuction(id) {
     const res = await axios.get(url, { timeout: 8000 });
     const $ = cheerio.load(res.data);
 
-    // TITOLI POSSIBILI
-    const title =
-      $(".product-title").text().trim() ||
-      $(".auction-title").text().trim() ||
-      $("h1").first().text().trim();
+    // TITOLO DAL TAG <title>
+    const title = $("title").text().replace(" - Bidoo", "").trim();
 
-    // PREZZI POSSIBILI
-    const priceText =
-      $(".current-price").text().trim() ||
-      $(".auction-price").first().text().trim() ||
-      $(".price").first().text().trim();
+    // PREZZO FINALE DAL DATA-ATTRIBUTE
+    const priceText = $(".auction-container-timer").attr("data-price-winner");
 
     if (!title || !priceText) return null;
 
@@ -95,7 +89,6 @@ async function scrapeAuction(id) {
     return null;
   }
 }
-
 // ---------------------------
 // SCAN DI UN BLOCCO DI ID
 // ---------------------------
