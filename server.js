@@ -63,10 +63,17 @@ async function scrapeAuction(id) {
     const res = await axios.get(url, { timeout: 8000 });
     const $ = cheerio.load(res.data);
 
-    const title = $(".auction-title").text().trim();
-    const priceText = $(".auction-price.auction-header-item-size")
-      .text()
-      .trim();
+    // TITOLI POSSIBILI
+    const title =
+      $(".product-title").text().trim() ||
+      $(".auction-title").text().trim() ||
+      $("h1").first().text().trim();
+
+    // PREZZI POSSIBILI
+    const priceText =
+      $(".current-price").text().trim() ||
+      $(".auction-price").first().text().trim() ||
+      $(".price").first().text().trim();
 
     if (!title || !priceText) return null;
 
@@ -83,7 +90,8 @@ async function scrapeAuction(id) {
       raw_price: priceText,
       created_at: new Date().toISOString()
     };
-  } catch {
+
+  } catch (err) {
     return null;
   }
 }
