@@ -54,7 +54,19 @@ async function scrapeAuction(id) {
   const url = `https://it.bidoo.com/auction.php?a=${id}`;
 
   try {
-    const res = await axios.get(url, { timeout: 8000 });
+    const res = await axios.get(url, {
+  timeout: 8000,
+  headers: {
+    "User-Agent":
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "Accept-Language": "it-IT,it;q=0.9",
+    "Referer": "https://it.bidoo.com/",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Cache-Control": "no-cache",
+    "Pragma": "no-cache",
+    "Cookie": "lang=it; currency=EUR;"
+  }
+});
     const $ = cheerio.load(res.data);
     console.log("DEBUG ID:", id);
 console.log("Has auction-container-timer:", $(".auction-container-timer").length);
