@@ -54,6 +54,7 @@ async function scrapeAuction(id) {
       waitUntil: "domcontentloaded",
       timeout: 90000
     });
+    console.log(await page.content());
   } catch (err) {
     console.log("Goto failed for", id, err.message);
     await browser.close();
