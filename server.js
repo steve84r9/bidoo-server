@@ -34,7 +34,7 @@ let db;
 
   const row = await db.get("SELECT value FROM meta WHERE key = 'last_scanned'");
   if (!row) {
-    await db.run("INSERT INTO meta (key, value) VALUES ('last_scanned', ?)", "90000000");
+    await db.run("INSERT INTO meta (key, value) VALUES ('last_scanned', ?)", "91900000");
   }
 })();
 
