@@ -1,7 +1,7 @@
 import express from "express";
 import sqlite3 from "sqlite3";
 import { open } from "sqlite";
-import { chromium } from "playwright";
+import { chromium } from "playwright-core";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -29,23 +29,38 @@ async function initDB() {
 }
 
 // ----------------------
-// SCRAPER PLAYWRIGHT
+// SCRAPER PLAYWRIGHT (Render compatible)
 // ----------------------
 async function scrapeAuction(id) {
   const url = `https://it.bidoo.com/auction.php?a=${id}`;
 
   const browser = await chromium.launch({
-  headless: true,
-  executablePath: "/usr/bin/chromium",
-  args: [
-  "--no-sandbox",
-  "--disable-setuid-sandbox",
-  "--disable-dev-shm-usage",
-  "--disable-gpu",
-  "--single-process"
+    headless: true,
+    executablePath: "/usr/bin/chromium",
+    args: [
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      "--disable-dev-shm-usage",
+      "--disable-gpu",
+      "--single-process",
+      "--disable-software-rasterizer",
+      "--disable-background-networking",
+      "--disable-background-timer-throttling",
+      "--disable-breakpad",
+      "--disable-client-side-phishing-detection",
+      "--disable-default-apps",
+      "--disable-extensions",
+      "--disable-hang-monitor",
+      "--disable-ipc-flooding-protection",
+      "--disable-popup-blocking",
+      "--disable-prompt-on-repost",
+      "--disable-sync",
+      "--metrics-recording-only",
+      "--no-first-run",
+      "--safebrowsing-disable-auto-update"
+    ]
+  });
 
-  ]
-});
   const page = await browser.newPage();
 
   await page.goto(url, { waitUntil: "networkidle" });
