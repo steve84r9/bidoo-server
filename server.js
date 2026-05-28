@@ -29,35 +29,20 @@ async function initDB() {
 }
 
 // ----------------------
-// SCRAPER PLAYWRIGHT (Render compatible)
+// SCRAPER PLAYWRIGHT (Docker compatible)
 // ----------------------
 async function scrapeAuction(id) {
   const url = `https://it.bidoo.com/auction.php?a=${id}`;
 
   const browser = await chromium.launch({
     headless: true,
-    executablePath: "/usr/bin/chromium",
+    executablePath: process.env.CHROMIUM_PATH || "/usr/bin/chromium",
     args: [
       "--no-sandbox",
       "--disable-setuid-sandbox",
       "--disable-dev-shm-usage",
       "--disable-gpu",
-      "--single-process",
-      "--disable-software-rasterizer",
-      "--disable-background-networking",
-      "--disable-background-timer-throttling",
-      "--disable-breakpad",
-      "--disable-client-side-phishing-detection",
-      "--disable-default-apps",
-      "--disable-extensions",
-      "--disable-hang-monitor",
-      "--disable-ipc-flooding-protection",
-      "--disable-popup-blocking",
-      "--disable-prompt-on-repost",
-      "--disable-sync",
-      "--metrics-recording-only",
-      "--no-first-run",
-      "--safebrowsing-disable-auto-update"
+      "--single-process"
     ]
   });
 
@@ -65,16 +50,10 @@ async function scrapeAuction(id) {
 
   await page.goto(url, { waitUntil: "networkidle" });
 
-  // Aspetta il timer (se c’è)
-  await page.waitForSelector(".auction-container-timer").catch(() => {});
-
   const data = await page.evaluate(() => {
     const title = document.title.replace(" - Bidoo", "").trim();
-
-    // Prezzo finale nelle aste chiuse
     const priceEl = document.querySelector(".price-winner");
     const priceText = priceEl ? priceEl.textContent.trim() : "";
-
     return { title, priceText };
   });
 
@@ -135,7 +114,7 @@ app.get("/cron", async (req, res) => {
 // STATUS
 // ----------------------
 app.get("/", (req, res) => {
-  res.send("Bidoo analyzer clone running.");
+  res.send("Bidoo analyzer clone running (Docker).");
 });
 
 // ----------------------

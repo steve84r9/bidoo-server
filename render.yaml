@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: bidoo-server
+    env: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
