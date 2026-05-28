@@ -29,7 +29,7 @@ async function initDB() {
 }
 
 // ----------------------
-// SCRAPER PLAYWRIGHT (HEADLESS + ANTI-BOT)
+// SCRAPER PLAYWRIGHT (HEADLESS + ANTI-BOT COMPATIBILE)
 // ----------------------
 async function scrapeAuction(id) {
   const url = `https://it.bidoo.com/auction.php?a=${id}`;
@@ -44,25 +44,31 @@ async function scrapeAuction(id) {
       "--disable-gpu",
       "--single-process",
       "--disable-blink-features=AutomationControlled",
-      "--disable-web-security",
-      "--disable-features=IsolateOrigins,site-per-process",
       "--window-size=1920,1080"
     ]
   });
 
   const page = await browser.newPage();
 
+  // VIEWPORT
   await page.setViewportSize({ width: 1920, height: 1080 });
 
+  // USER AGENT
   await page.setExtraHTTPHeaders({
     "User-Agent":
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
     "Accept-Language": "it-IT,it;q=0.9"
   });
 
-await page.addInitScript(() => {
-  Object.defineProperty(navigator, "webdriver", { get: () => false });
-});
+  // ANTI-BOT COMPATIBILE (senza addInitScript)
+  await page.route("**/*", (route) => {
+    const headers = {
+      ...route.request().headers(),
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
+    };
+    route.continue({ headers });
+  });
 
   try {
     await page.goto(url, {
