@@ -1,7 +1,7 @@
 import express from "express";
-import { chromium } from "playwright";
 import sqlite3 from "sqlite3";
 import { open } from "sqlite";
+import { chromium } from "playwright";
 
 const app = express();
 const PORT = process.env.PORT;
