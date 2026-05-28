@@ -36,12 +36,14 @@ async function scrapeAuction(id) {
 
   const browser = await chromium.launch({
   headless: true,
-  executablePath: "/usr/bin/chromium-browser",
+  executablePath: "/usr/bin/chromium",
   args: [
-    "--no-sandbox",
-    "--disable-setuid-sandbox",
-    "--disable-dev-shm-usage",
-    "--disable-gpu"
+  "--no-sandbox",
+  "--disable-setuid-sandbox",
+  "--disable-dev-shm-usage",
+  "--disable-gpu",
+  "--single-process"
+
   ]
 });
   const page = await browser.newPage();
