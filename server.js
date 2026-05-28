@@ -56,6 +56,9 @@ async function scrapeAuction(id) {
   try {
     const res = await axios.get(url, { timeout: 8000 });
     const $ = cheerio.load(res.data);
+    console.log("DEBUG ID:", id);
+console.log("Has auction-container-timer:", $(".auction-container-timer").length);
+console.log("data-price-winner:", $(".auction-container-timer").attr("data-price-winner"));
 
     // TITOLO DAL TAG <title>
     const title = $("title").text().replace(" - Bidoo", "").trim();
