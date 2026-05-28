@@ -47,7 +47,7 @@ let db;
   // Forza nuovo valore corretto
   await db.run(
     "UPDATE meta SET value = ? WHERE key = 'last_scanned'",
-    "91900000"
+    "92000000"
   );
 
   console.log("DB inizializzato. last_scanned = 91900000");
