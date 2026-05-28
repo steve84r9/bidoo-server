@@ -48,7 +48,25 @@ async function scrapeAuction(id) {
 
   const page = await browser.newPage();
 
-  await page.goto(url, { waitUntil: "networkidle" });
+  // FIX: timeout + fallback
+  try {
+    await page.goto(url, {
+      waitUntil: "domcontentloaded",
+      timeout: 90000
+    });
+  } catch (err) {
+    console.log("Goto failed for", id, err.message);
+    await browser.close();
+    return null;
+  }
+
+  // Se la pagina non ha titolo → non è caricata
+  const title = await page.title();
+  if (!title) {
+    console.log("Page failed:", id);
+    await browser.close();
+    return null;
+  }
 
   const data = await page.evaluate(() => {
     const title = document.title.replace(" - Bidoo", "").trim();
