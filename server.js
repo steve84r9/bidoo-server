@@ -60,9 +60,9 @@ async function scrapeAuction(id) {
     "Accept-Language": "it-IT,it;q=0.9"
   });
 
-  await page.evaluateOnNewDocument(() => {
-    Object.defineProperty(navigator, "webdriver", { get: () => false });
-  });
+await page.addInitScript(() => {
+  Object.defineProperty(navigator, "webdriver", { get: () => false });
+});
 
   try {
     await page.goto(url, {
