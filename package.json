@@ -13,6 +13,6 @@
     "express": "^4.19.0",
     "sqlite3": "^5.1.6",
     "sqlite": "^4.2.1",
-    "playwright": "^1.44.0"
+    "playwright-core": "^1.44.0"
   }
 }
