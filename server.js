@@ -1,5 +1,5 @@
 import express from "express";
-import puppeteer from "puppeteer";
+import { chromium } from "playwright";
 import sqlite3 from "sqlite3";
 import { open } from "sqlite";
 
@@ -45,26 +45,20 @@ let db;
 })();
 
 // ---------------------------
-// SCRAPER CON PUPPETEER
+// SCRAPER CON CHROMIUM
 // ---------------------------
 async function scrapeAuction(id) {
   const url = `https://it.bidoo.com/auction.php?a=${id}`;
 
-  const browser = await puppeteer.launch({
-    headless: "new",
-    args: ["--no-sandbox", "--disable-setuid-sandbox"]
+  const browser = await chromium.launch({
+    headless: true
   });
 
   const page = await browser.newPage();
 
-  await page.setUserAgent(
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
-  );
+  await page.goto(url, { waitUntil: "networkidle" });
 
-  await page.goto(url, { waitUntil: "networkidle2", timeout: 30000 });
-
-  // aspetta il timer (anche se nascosto)
-  await page.waitForSelector(".auction-container-timer", { timeout: 5000 }).catch(() => {});
+  await page.waitForSelector(".auction-container-timer").catch(() => {});
 
   const data = await page.evaluate(() => {
     const title = document.title.replace(" - Bidoo", "").trim();
