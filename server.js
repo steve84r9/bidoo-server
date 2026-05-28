@@ -32,10 +32,13 @@ let db;
     );
   `);
 
-  const row = await db.get("SELECT value FROM meta WHERE key = 'last_scanned'");
-  if (!row) {
-    await db.run("INSERT INTO meta (key, value) VALUES ('last_scanned', ?)", "91900000");
-  }
+const row = await db.get("SELECT value FROM meta WHERE key = 'last_scanned'");
+if (!row) {
+  await db.run("INSERT INTO meta (key, value) VALUES ('last_scanned', ?)", "90000000");
+}
+
+// FORZA IL NUOVO VALORE
+await db.run("UPDATE meta SET value = ? WHERE key = 'last_scanned'", "91900000");
 })();
 
 // --- SCRAPER DI UNA SINGOLA ASTA ---
