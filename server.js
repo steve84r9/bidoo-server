@@ -29,13 +29,13 @@ async function initDB() {
 }
 
 // ----------------------
-// SCRAPER PLAYWRIGHT (ANTI-BOT + Docker compatible)
+// SCRAPER PLAYWRIGHT (HEADLESS + ANTI-BOT)
 // ----------------------
 async function scrapeAuction(id) {
   const url = `https://it.bidoo.com/auction.php?a=${id}`;
 
   const browser = await chromium.launch({
-    headless: false,
+    headless: true,
     executablePath: process.env.CHROMIUM_PATH || "/usr/bin/chromium",
     args: [
       "--no-sandbox",
