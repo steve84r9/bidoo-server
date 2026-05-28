@@ -29,72 +29,52 @@ async function initDB() {
 }
 
 // ----------------------
-// SCRAPER PLAYWRIGHT (Docker compatible)
+// SCRAPER PLAYWRIGHT (ANTI-BOT + Docker compatible)
 // ----------------------
 async function scrapeAuction(id) {
   const url = `https://it.bidoo.com/auction.php?a=${id}`;
 
   const browser = await chromium.launch({
-  headless: false,
-  executablePath: process.env.CHROMIUM_PATH || "/usr/bin/chromium",
-  args: [
-    "--no-sandbox",
-    "--disable-setuid-sandbox",
-    "--disable-dev-shm-usage",
-    "--disable-gpu",
-    "--single-process",
-    "--disable-blink-features=AutomationControlled",
-    "--disable-web-security",
-    "--disable-features=IsolateOrigins,site-per-process",
-    "--window-size=1920,1080"
-  ]
-});
+    headless: false,
+    executablePath: process.env.CHROMIUM_PATH || "/usr/bin/chromium",
+    args: [
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      "--disable-dev-shm-usage",
+      "--disable-gpu",
+      "--single-process",
+      "--disable-blink-features=AutomationControlled",
+      "--disable-web-security",
+      "--disable-features=IsolateOrigins,site-per-process",
+      "--window-size=1920,1080"
+    ]
+  });
 
   const page = await browser.newPage();
 
-  // FIX: timeout + fallback
-const browser = await chromium.launch({
-  headless: false,
-  executablePath: process.env.CHROMIUM_PATH || "/usr/bin/chromium",
-  args: [
-    "--no-sandbox",
-    "--disable-setuid-sandbox",
-    "--disable-dev-shm-usage",
-    "--disable-gpu",
-    "--single-process",
-    "--disable-blink-features=AutomationControlled",
-    "--disable-web-security",
-    "--disable-features=IsolateOrigins,site-per-process",
-    "--window-size=1920,1080"
-  ]
-});
+  await page.setViewportSize({ width: 1920, height: 1080 });
 
-const page = await browser.newPage();
-
-await page.setViewportSize({ width: 1920, height: 1080 });
-
-await page.setExtraHTTPHeaders({
-  "User-Agent":
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
-  "Accept-Language": "it-IT,it;q=0.9"
-});
-
-await page.evaluateOnNewDocument(() => {
-  Object.defineProperty(navigator, "webdriver", { get: () => false });
-});
-
-try {
-  await page.goto(url, {
-    waitUntil: "domcontentloaded",
-    timeout: 90000
+  await page.setExtraHTTPHeaders({
+    "User-Agent":
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+    "Accept-Language": "it-IT,it;q=0.9"
   });
-} catch (err) {
-  console.log("Goto failed for", id, err.message);
-  await browser.close();
-  return null;
-}
 
-  // Se la pagina non ha titolo → non è caricata
+  await page.evaluateOnNewDocument(() => {
+    Object.defineProperty(navigator, "webdriver", { get: () => false });
+  });
+
+  try {
+    await page.goto(url, {
+      waitUntil: "domcontentloaded",
+      timeout: 90000
+    });
+  } catch (err) {
+    console.log("Goto failed for", id, err.message);
+    await browser.close();
+    return null;
+  }
+
   const title = await page.title();
   if (!title) {
     console.log("Page failed:", id);
