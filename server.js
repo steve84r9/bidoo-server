@@ -1,7 +1,6 @@
 import express from "express";
 import sqlite3 from "sqlite3";
 import { open } from "sqlite";
-import { chromium } from "playwright-core";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -29,89 +28,35 @@ async function initDB() {
 }
 
 // ----------------------
-// SCRAPER PLAYWRIGHT (HEADLESS + ANTI-BOT COMPATIBILE)
+// SCRAPER API (NO BROWSER)
 // ----------------------
 async function scrapeAuction(id) {
-  const url = `https://it.bidoo.com/auction.php?a=${id}`;
-
-  const browser = await chromium.launch({
-    headless: true,
-    executablePath: process.env.CHROMIUM_PATH || "/usr/bin/chromium",
-    args: [
-      "--no-sandbox",
-      "--disable-setuid-sandbox",
-      "--disable-dev-shm-usage",
-      "--disable-gpu",
-      "--single-process",
-      "--disable-blink-features=AutomationControlled",
-      "--window-size=1920,1080"
-    ]
-  });
-
-  const page = await browser.newPage();
-
-  // VIEWPORT
-  await page.setViewportSize({ width: 1920, height: 1080 });
-
-  // USER AGENT
-  await page.setExtraHTTPHeaders({
-    "User-Agent":
-      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
-    "Accept-Language": "it-IT,it;q=0.9"
-  });
-
-  // ANTI-BOT COMPATIBILE (senza addInitScript)
-  await page.route("**/*", (route) => {
-    const headers = {
-      ...route.request().headers(),
-      "User-Agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
-    };
-    route.continue({ headers });
-  });
+  const url = `https://it.bidoo.com/data.php?ALL=${id}&LISTID=0`;
 
   try {
-    await page.goto(url, {
-      waitUntil: "domcontentloaded",
-      timeout: 90000
-    });
+    const res = await fetch(url);
+    const json = await res.json();
+
+    // Se non esiste l'asta
+    if (!json || !json.data || !json.data[id]) {
+      console.log("No data for", id);
+      return null;
+    }
+
+    const a = json.data[id];
+
+    return {
+      id,
+      title: a.title || "",
+      price: parseFloat(a.price || 0),
+      raw_price: a.price || "",
+      created_at: new Date().toISOString()
+    };
+
   } catch (err) {
-    console.log("Goto failed for", id, err.message);
-    await browser.close();
+    console.log("API error for", id, err.message);
     return null;
   }
-
-  const title = await page.title();
-  if (!title) {
-    console.log("Page failed:", id);
-    await browser.close();
-    return null;
-  }
-
-  const data = await page.evaluate(() => {
-    const title = document.title.replace(" - Bidoo", "").trim();
-    const priceEl = document.querySelector(".price-winner");
-    const priceText = priceEl ? priceEl.textContent.trim() : "";
-    return { title, priceText };
-  });
-
-  await browser.close();
-
-  if (!data.title || !data.priceText) return null;
-
-  const priceNum = parseFloat(
-    data.priceText.replace("€", "").replace(".", "").replace(",", ".")
-  );
-
-  if (isNaN(priceNum)) return null;
-
-  return {
-    id,
-    title: data.title,
-    price: priceNum,
-    raw_price: data.priceText,
-    created_at: new Date().toISOString()
-  };
 }
 
 // ----------------------
@@ -140,8 +85,6 @@ app.get("/cron", async (req, res) => {
     if (result) {
       await saveAuction(result);
       console.log("Saved:", result);
-    } else {
-      console.log("No data for", id);
     }
   }
 
@@ -152,7 +95,7 @@ app.get("/cron", async (req, res) => {
 // STATUS
 // ----------------------
 app.get("/", (req, res) => {
-  res.send("Bidoo analyzer clone running (Docker).");
+  res.send("Bidoo analyzer clone running (API mode).");
 });
 
 // ----------------------
