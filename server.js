@@ -1,11 +1,10 @@
 import express from "express";
-import axios from "axios";
-import * as cheerio from "cheerio";
+import puppeteer from "puppeteer";
 import sqlite3 from "sqlite3";
 import { open } from "sqlite";
 
 const app = express();
-const PORT = process.env.PORT; // Render imposta la porta automaticamente
+const PORT = process.env.PORT;
 
 // ---------------------------
 // INIT DATABASE
@@ -17,7 +16,6 @@ let db;
     driver: sqlite3.Database
   });
 
-  // Tabelle
   await db.exec(`
     CREATE TABLE IF NOT EXISTS auctions (
       id TEXT PRIMARY KEY,
@@ -35,7 +33,6 @@ let db;
     );
   `);
 
-  // Inizializza last_scanned se non esiste
   const row = await db.get("SELECT value FROM meta WHERE key = 'last_scanned'");
   if (!row) {
     await db.run(
@@ -48,59 +45,55 @@ let db;
 })();
 
 // ---------------------------
-// SCRAPER ASTA CHIUSA
+// SCRAPER CON PUPPETEER
 // ---------------------------
 async function scrapeAuction(id) {
   const url = `https://it.bidoo.com/auction.php?a=${id}`;
 
-  try {
-    const res = await axios.get(url, {
-  timeout: 8000,
-  headers: {
-    "User-Agent":
-      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-    "Accept-Language": "it-IT,it;q=0.9",
-    "Referer": "https://it.bidoo.com/",
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-    "Cache-Control": "no-cache",
-    "Pragma": "no-cache",
-    "Cookie": "lang=it; currency=EUR;"
-  }
-});
-    const $ = cheerio.load(res.data);
-    console.log("DEBUG ID:", id);
-console.log("Has auction-container-timer:", $(".auction-container-timer").length);
-console.log("data-price-winner:", $(".auction-container-timer").attr("data-price-winner"));
+  const browser = await puppeteer.launch({
+    headless: "new",
+    args: ["--no-sandbox", "--disable-setuid-sandbox"]
+  });
 
-    // TITOLO DAL TAG <title>
-    const title = $("title").text().replace(" - Bidoo", "").trim();
+  const page = await browser.newPage();
 
-    // PREZZO FINALE DAL DATA-ATTRIBUTE
-    const priceText = $(".auction-container-timer").attr("data-price-winner");
+  await page.setUserAgent(
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+  );
 
-    if (!title || !priceText) return null;
+  await page.goto(url, { waitUntil: "networkidle2", timeout: 30000 });
 
-    const priceNum = parseFloat(
-      priceText.replace("€", "").replace(".", "").replace(",", ".")
-    );
+  // aspetta il timer (anche se nascosto)
+  await page.waitForSelector(".auction-container-timer", { timeout: 5000 }).catch(() => {});
 
-    if (isNaN(priceNum)) return null;
+  const data = await page.evaluate(() => {
+    const title = document.title.replace(" - Bidoo", "").trim();
+    const timer = document.querySelector(".auction-container-timer");
+    const priceText = timer?.getAttribute("data-price-winner") || "";
+    return { title, priceText };
+  });
 
-    return {
-      id,
-      title,
-      price: priceNum,
-      raw_price: priceText,
-      created_at: new Date().toISOString()
-    };
+  await browser.close();
 
-  } catch (err) {
-    return null;
-  }
+  if (!data.title || !data.priceText) return null;
+
+  const priceNum = parseFloat(
+    data.priceText.replace("€", "").replace(".", "").replace(",", ".")
+  );
+
+  if (isNaN(priceNum)) return null;
+
+  return {
+    id,
+    title: data.title,
+    price: priceNum,
+    raw_price: data.priceText,
+    created_at: new Date().toISOString()
+  };
 }
 
 // ---------------------------
-// SCAN BLOCCO DI ID NUMERICI
+// SCAN BLOCCO DI ID
 // ---------------------------
 async function scanBlock(blockSize = 5000) {
   const meta = await db.get(
@@ -156,39 +149,13 @@ app.get("/cron", async (req, res) => {
 });
 
 // ---------------------------
-// SEARCH API
-// ---------------------------
-app.get("/search", async (req, res) => {
-  const q = (req.query.q || "").toString().trim().toLowerCase();
-  if (!q) return res.json([]);
-
-  const rows = await db.all(
-    `SELECT * FROM auctions
-     WHERE LOWER(title) LIKE ?
-     ORDER BY created_at DESC
-     LIMIT 500`,
-    `%${q}%`
-  );
-
-  res.json(rows);
-});
-
-// ---------------------------
-// STATUS API
+// STATUS
 // ---------------------------
 app.get("/status", async (req, res) => {
   try {
-    const last = await db.get(
-      "SELECT value FROM meta WHERE key = 'last_scanned'"
-    );
-
-    const count = await db.get(
-      "SELECT COUNT(*) AS total FROM auctions"
-    );
-
-    const cycle = await db.get(
-      "SELECT value FROM meta WHERE key = 'last_cycle'"
-    );
+    const last = await db.get("SELECT value FROM meta WHERE key = 'last_scanned'");
+    const count = await db.get("SELECT COUNT(*) AS total FROM auctions");
+    const cycle = await db.get("SELECT value FROM meta WHERE key = 'last_cycle'");
 
     res.json({
       ok: true,
@@ -203,10 +170,10 @@ app.get("/status", async (req, res) => {
 });
 
 // ---------------------------
-// ROOT TEST
+// ROOT
 // ---------------------------
 app.get("/", (req, res) => {
-  res.send("Bidoo closed-auctions analyzer running.");
+  res.send("Bidoo closed-auctions analyzer running (Puppeteer version).");
 });
 
 // ---------------------------
