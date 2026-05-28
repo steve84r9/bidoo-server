@@ -5,7 +5,7 @@ import sqlite3 from "sqlite3";
 import { open } from "sqlite";
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000;
 
 // ---------------------------
 // INIT DATABASE
