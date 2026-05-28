@@ -5,7 +5,7 @@ import sqlite3 from "sqlite3";
 import { open } from "sqlite";
 
 const app = express();
-const PORT = process.env.PORT;
+const PORT = process.env.PORT; // Render imposta la porta automaticamente
 
 // ---------------------------
 // INIT DATABASE
@@ -40,21 +40,15 @@ let db;
   if (!row) {
     await db.run(
       "INSERT INTO meta (key, value) VALUES ('last_scanned', ?)",
-      "90000000"
+      "91500000"
     );
   }
 
-  // Forza nuovo valore corretto
-  await db.run(
-    "UPDATE meta SET value = ? WHERE key = 'last_scanned'",
-    "92000000"
-  );
-
-  console.log("DB inizializzato. last_scanned = 91900000");
+  console.log("DB inizializzato.");
 })();
- 
+
 // ---------------------------
-// SCRAPER DI UNA SINGOLA ASTA
+// SCRAPER ASTA CHIUSA
 // ---------------------------
 async function scrapeAuction(id) {
   const url = `https://it.bidoo.com/auction.php?a=${id}`;
@@ -89,8 +83,9 @@ async function scrapeAuction(id) {
     return null;
   }
 }
+
 // ---------------------------
-// SCAN DI UN BLOCCO DI ID
+// SCAN BLOCCO DI ID NUMERICI
 // ---------------------------
 async function scanBlock(blockSize = 5000) {
   const meta = await db.get(
@@ -196,7 +191,7 @@ app.get("/status", async (req, res) => {
 // ROOT TEST
 // ---------------------------
 app.get("/", (req, res) => {
-  res.send("Bidoo analyzer clone running.");
+  res.send("Bidoo closed-auctions analyzer running.");
 });
 
 // ---------------------------
